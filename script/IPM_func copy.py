@@ -43,7 +43,7 @@ class RunwayDetector:
         self.division_frame_counter = 0
         self.enable_extra_drawing = True
         
-        # # IPM相关超参数
+        # IPM相关超参数
         # IPM_leftup = (530,290)
         # IPM_leftdown = (200,504)
         # IPM_rightup = (690,290)
@@ -249,7 +249,7 @@ class RunwayDetector:
                 if abs(k_l) > 0.01:
                     x_start_l = int(k_l * visible_y_min + b_l)
                     x_end_l = int(k_l * visible_y_max + b_l)
-                    cv2.line(image, (x_start_l, visible_y_min), (x_end_l, visible_y_max), (0,0,255), 3)
+                    # cv2.line(image, (x_start_l, visible_y_min), (x_end_l, visible_y_max), (0,0,255), 3)
                     
                     # 等分点处理
                     if vp_y != 1 and right_lines is not None:
@@ -268,7 +268,7 @@ class RunwayDetector:
                 if abs(k_r) > 0.01:
                     x_start_r = int(k_r * visible_y_min + b_r)
                     x_end_r = int(k_r * visible_y_max + b_r)
-                    cv2.line(image, (x_start_r, visible_y_min), (x_end_r, visible_y_max), (0, 0, 255), 3)
+                    # cv2.line(image, (x_start_r, visible_y_min), (x_end_r, visible_y_max), (0, 0, 255), 3)
                     
                     # 等分点处理
                     if vp_y != 1 and left_lines is not None:

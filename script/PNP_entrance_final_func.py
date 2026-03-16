@@ -198,6 +198,7 @@ class EntranceDetector:
         
         # 写入视频帧（确保out不为空）
         if out is not None and not self.esc_pressed:
+            frame == cv2.resize(frame, (1920, 1080))
             out.write(frame)
         
         return frame

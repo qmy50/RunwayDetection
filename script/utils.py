@@ -19,7 +19,7 @@ def draw_full_image_line(img, k, b, color=(0, 0, 255), thickness=2):
 
     # 选择图像顶部 (y=0) 和底部 (y=h-1) 两个点
     y1 = 0
-    y2 = h - 1
+    y2 = int(h - 1)
     x1 = int(k * y1 + b)          # 对应 x 坐标
     x2 = int(k * y2 + b)
 

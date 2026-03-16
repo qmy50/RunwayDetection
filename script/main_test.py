@@ -10,15 +10,15 @@ from IPM_func import RunwayDetector
 import config
 from sam_test import HorizonDetector
 
-model = YOLO(r"D:\yolo\runs\detect\train4\weights\best.pt")
 
+model = YOLO(r"D:\yolo\runs\detect\train4\weights\best.pt")
 
 def main():
     yolo_kf = YOLO_KF(1)
     left_line_kf = left_line_KF(1,[5,5])
     right_line_kf = right_line_KF(1,[5,5])
     horizon_kf = HorizonKF(1,[70,70])
-    cap = cv2.VideoCapture(r"D:\yolo\qq_3045834499\yolov8-42\my_dataset\test\test_video.mp4")
+    cap = cv2.VideoCapture(r"D:\program\HoriLane\RunwayDetection\test_video.mp4")
     if not cap.isOpened():
         print("Error: Could not open video.")
         exit()
@@ -28,10 +28,11 @@ def main():
     print(f"视频帧率: {fps} FPS")
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print(width,height)
     
-    fourcc = cv2.VideoWriter_fourcc(*'XVID') 
-    output_video_path = r"D:\yolo\qq_3045834499\yolov8-42\runs\detect\predict\save_viedo.avi"
-    out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    output_video_path = r"D:\yolo\qq_3045834499\yolov8-42\runs\detect\predict\save_viedo.mp4"
+    out = cv2.VideoWriter(output_video_path, fourcc, fps, (1920, 1080))
 
     pbar = tqdm(total=total_frames, desc="处理视频帧",colour="green")
 
@@ -46,9 +47,12 @@ def main():
     counter = 0
     GOON = True
     yolo_last = 0
-    IPM_ON = False
+    LANDING_TWO = False
     ipm_left = False
     ipm_right = False
+
+    UFLD_success = False
+    
 
     left_k_mean = None
     right_k_mean = None
@@ -56,7 +60,7 @@ def main():
 
     division_frame_counter = 0
     enable_extra_drawing = False
-    MAX_EXTRA_FRAMES = 20
+    MAX_EXTRA_FRAMES = 1
     
     coord_file = open('division_points.txt', 'w', encoding='utf-8')
     coord_file.write("帧号,左线1/5点(x,y),左线4/5点(x,y),右线1/5点(x,y),右线4/5点(x,y)\n")
@@ -67,31 +71,22 @@ def main():
     runwayDetector = RunwayDetector(yolo_model_path, sam_checkpoint, width, height)
     entranceDetector = EntranceDetector(MODEL_PATH=MODEL_PATH,MODE='show')
     while True:
-        ret, frame = cap.read()
+        ret, image = cap.read()
         if not ret:
             break
-            
-        image = frame.copy()
-        
         if YOLO_ON:
-            results = model.predict(frame, verbose=False) 
+            results = model.predict(image, verbose=False) 
             if len(results) > 0 and len(results[0].boxes) > 0:
                 GOON = True
                 box = results[0].boxes[0]
                 x1_yolo, y1_yolo, x2_yolo, y2_yolo = map(int, box.xyxy[0].tolist())
 
-                if abs(x1_yolo - x2_yolo) > 0.95 * width:
+                if abs(x1_yolo - x2_yolo) > 0.99 * width and counter > 0.5 * total_frames:  # 如果检测框过宽且不是前几帧，认为检测失效
                     YOLO_ON = False
                     yolo_last = y1_yolo
                     enable_extra_drawing = True
                     division_frame_counter = 0
                 elif not config.COME_TO_END :
-                    # x1_crop = max(0,x1_yolo)
-                    # y1_crop = max(0,y1_yolo)
-                    # x2_crop = min(width,x2_yolo)
-                    # y2_crop = min(height,y2_yolo)
-                    # cropped_image = image[y1_crop:y2_crop,x1_crop:x2_crop]
-                    # if cropped_image.shape[0] > 0 and cropped_image.shape[1] > 0:
                     processed_cropped = entranceDetector.process_frame(image, out=None)
                     # print(config.COME_TO_END)
                     if processed_cropped is not None:
@@ -106,7 +101,7 @@ def main():
                 if division_frame_counter > MAX_EXTRA_FRAMES:
                     enable_extra_drawing = False
         
-        if GOON and not IPM_ON:
+        if GOON and not LANDING_TWO:
             if YOLO_ON:
                 x1_yolo, y1_yolo, x2_yolo, y2_yolo = map(int, box.xyxy[0].tolist())
             cx = (x1_yolo + x2_yolo) / 2
@@ -124,6 +119,8 @@ def main():
             
             pt1 = (x1, y1)
             pt2 = (x2, y2)
+            visible_y_min = max(0, y1)
+            visible_y_max = min(height, y2)
 
             edges, vertical_edges = canny_vertical_edges(image, pt1, pt2)
             # cv2.imshow("edges", edges)
@@ -135,13 +132,9 @@ def main():
                 original_lines = original_lines[0:2, :, :]
                 original_lines = original_lines.reshape(-1, 4)
                 left_list, right_list = average(original_lines, cx, 
-                                               left_k_mean=left_k_mean,
-                                               right_k_mean=right_k_mean,
-                                               k_threshold=K_THRESHOLD)
-
-            visible_y_min = max(0, y1)
-            visible_y_max = min(height, y2)
-
+                                            left_k_mean=left_k_mean,
+                                            right_k_mean=right_k_mean,
+                                            k_threshold=K_THRESHOLD)
             '''LEFT LINE (x = k_left * y + b_left)'''
             left_k_b = None
             if len(left_list) > 0:
@@ -156,7 +149,7 @@ def main():
                 weight = weight / np.sum(weight)
                 left_k_b = np.average(left_line_hist, axis=0, weights=weight)
                 left_k_mean = left_k_b[0]
-                
+            
             flag_l = left_k_b is not None and not np.isnan(left_k_b).any()
             if flag_l:                
                 last_valid_left = left_k_b
@@ -166,7 +159,6 @@ def main():
                 left_k_b = last_valid_left 
                 if left_k_b is not None and left_k_mean is None:
                     left_k_mean = left_k_b[0]
-
 
             '''RIGHT LINE (x = k_right * y + b_right)'''
             right_k_b = None
@@ -193,7 +185,6 @@ def main():
                 if right_k_b is not None and right_k_mean is None:
                     right_k_mean = right_k_b[0]
             
-
             if left_k_b is not None:
                 left_line_kf.predict()
                 left_k_b = left_line_kf.update(left_k_b)  # 返回 [k, b]
@@ -213,8 +204,6 @@ def main():
                         if len(left_division_points) >= 20:
                             current_ipm_leftup = left_division_points[10]
                             current_ipm_leftdown = left_division_points[19]
-                            cv2.circle(image, (current_ipm_leftup[0], current_ipm_leftup[1]), 5, (0,255,0), -1)
-                            cv2.circle(image, (current_ipm_leftdown[0], current_ipm_leftdown[1]), 5, (0,255,255), -1)
                             ipm_left = True
             
             if right_k_b is not None:
@@ -235,12 +224,10 @@ def main():
                         if len(right_division_points) >= 20:
                             current_ipm_rightup = right_division_points[10]
                             current_ipm_rightdown = right_division_points[19]
-                            cv2.circle(image, (current_ipm_rightup[0], current_ipm_rightup[1]), 5, (0,255,0), -1)
-                            cv2.circle(image, (current_ipm_rightdown[0], current_ipm_rightdown[1]), 5, (0,255,255), -1)
                             ipm_right = True
 
-            if ipm_right and ipm_left:
-                IPM_ON = True
+            if ipm_right and ipm_left and not UFLD_success:
+                LANDING_TWO = True
                 runwayDetector.left_valid_ipm = [current_ipm_leftdown, current_ipm_leftup]
                 runwayDetector.right_valid_ipm = [current_ipm_rightdown, current_ipm_rightup]
                 runwayDetector.IPM_points = [current_ipm_leftdown, current_ipm_rightdown, current_ipm_rightup, current_ipm_leftup]
@@ -261,7 +248,7 @@ def main():
                     '''绘制地平线'''
                     roi = (200, vp_y - 40, width-400, 70)
                     ROI_SKY_POINT = [[(width-400)/2, 20]]
-                    horizon_result = HorizonDetector.detect_horizon(frame, roi, ROI_SKY_POINT)
+                    horizon_result = HorizonDetector.detect_horizon(image, roi, ROI_SKY_POINT)
                     
                     smoothed_horizon = []
                     if horizon_result is not None:
@@ -278,9 +265,8 @@ def main():
                     # 绘制地平线
                     if k_h != 0:    
                         draw_full_image_line(image, 1/k_h, -(b_h)/k_h if k_h != 0 else 0)
-
-            out.write(image)
-            # cv2.imshow("Runway Detection", image) 
+            image_resized = cv2.resize(image, (1920, 1080))
+            out.write(image_resized)
             
             key = cv2.waitKey(1)
             if key == ord('s'):
@@ -288,8 +274,12 @@ def main():
             elif key == ord('q'):
                 break
         
-        elif IPM_ON:
-            runwayDetector.process_frame(frame,out = out)
+        elif LANDING_TWO:
+            # cv2.imshow("frame",image)
+            # cv2.waitKey(1)
+            # print(image.shape[:2])
+            image = cv2.resize(image,(1920,1080))
+            runwayDetector.process_frame(image,out = out,IPM_assist = True)
         
         counter += 1
         pbar.update(1)
@@ -303,3 +293,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# python main_test.py ../UFLDv2/configs/tusimple_res18.py
