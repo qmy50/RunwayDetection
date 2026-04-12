@@ -1,8 +1,13 @@
 import os, argparse
-from UFLDv2.data.torch_dataloader import get_train_loader_v1
-from UFLDv2.utils.dist_utils import get_rank, get_world_size, is_main_process, dist_print, DistSummaryWriter
+# from UFLDv2.data.torch_dataloader import get_train_loader_v1
+from UFLDv2.utils.dist_utils import get_rank, get_world_size, is_main_process, dist_print
 from UFLDv2.utils.config import Config
-import torch
+
+# from data.torch_dataloader import get_train_loader_v1
+# from utils.dist_utils import get_rank, get_world_size, is_main_process, dist_print, DistSummaryWriter
+# from utils.config import Config
+
+# import torch
 import time
 
 
@@ -20,7 +25,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('config', help = 'path to config file')
     parser.add_argument('--local_rank', type=int, default=0)
-
+    parser.add_argument('--img_path', default= None,type = str)
     parser.add_argument('--dataset', default = None, type = str)
     parser.add_argument('--data_root', default = None, type = str)
     parser.add_argument('--epoch', default = None, type = int)
@@ -83,7 +88,7 @@ def merge_config():
     'num_cell_row', 'num_cell_col', 'mean_loss_w','fc_norm','soft_loss','cls_loss_col_w', 'cls_ext_col_w', 'mean_loss_col_w', 'eval_mode', 'eval_during_training', 'split_channel', 'match_method', 'selected_lane', 'cumsum', 'masked']
     for item in items:
         if getattr(args, item) is not None:
-            dist_print('merge ', item, ' config')
+            print('merge ', item, ' config')
             setattr(cfg, item, getattr(args, item))
 
     if cfg.dataset == 'CULane':
@@ -108,7 +113,7 @@ def save_model(net, optimizer, epoch,save_path, distributed):
         model_path = os.path.join(save_path, 'model_best.pth')
         torch.save(state, model_path)
 
-import pathspec
+# import pathspec
 
 def cp_projects(auto_backup, to_path):
     if is_main_process() and auto_backup:
@@ -143,14 +148,14 @@ def get_work_dir(cfg):
     work_dir = os.path.join(cfg.log_path, now + hyper_param_str + cfg.note)
     return work_dir
 
-def get_logger(work_dir, cfg):
-    logger = DistSummaryWriter(work_dir)
-    config_txt = os.path.join(work_dir, 'cfg.txt')
-    if is_main_process():
-        with open(config_txt, 'w') as fp:
-            fp.write(str(cfg))
+# def get_logger(work_dir, cfg):
+#     logger = DistSummaryWriter(work_dir)
+#     config_txt = os.path.join(work_dir, 'cfg.txt')
+#     if is_main_process():
+#         with open(config_txt, 'w') as fp:
+#             fp.write(str(cfg))
 
-    return logger
+#     return logger
 
 def initialize_weights(*models):
     for model in models:

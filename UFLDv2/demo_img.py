@@ -6,13 +6,10 @@ import torchvision.transforms as transforms
 from PIL import Image  # 新增，用于帧预处理
 from UFLDv2.utils_lane import draw_full_image_line, ransac_polyfit
 import numpy as np
+import cv2
 
 class UFLDDetector:
-    def __init__(self, config_path=None):
-        """
-        初始化UFLD检测器
-        :param config_path: 配置文件路径，如果为None则使用默认配置
-        """
+    def __init__(self, img_w,img_h,config_path=None):
         torch.backends.cudnn.benchmark = True
 
         # 加载配置
@@ -20,7 +17,7 @@ class UFLDDetector:
         self.cfg.batch_size = 1
         assert self.cfg.backbone in ['18', '34', '50', '101', '152', '50next', '101next', '50wide', '101wide']
         self.cls_num_per_lane = 56
-        self.img_w, self.img_h = 1280, 720
+        self.img_w, self.img_h = img_w, img_h
 
         # 加载模型
         self.net = get_model(self.cfg)
@@ -39,12 +36,6 @@ class UFLDDetector:
         ])
 
     def pred2coords(self, pred, local_width=1):
-        """
-        将预测结果转换为坐标
-        :param pred: 模型预测结果
-        :param local_width: 局部宽度
-        :return: 左车道坐标, 右车道坐标
-        """
         batch_size, num_grid_row, num_cls_row, num_lane_row = pred['loc_row'].shape
         batch_size, num_grid_col, num_cls_col, num_lane_col = pred['loc_col'].shape
 
@@ -59,8 +50,6 @@ class UFLDDetector:
 
         right_coords = []
         left_coords = []
-        middle = self.img_w / 2
-        coords = []
 
         row_lane_idx = [0, 1]
         col_lane_idx = [0, 1]
@@ -78,7 +67,7 @@ class UFLDDetector:
                         out_tmp = (pred['loc_row'][0, all_ind, k, i].softmax(0) * all_ind.float()).sum() + 0.5
                         out_tmp = out_tmp / (num_grid_row - 1) * self.img_w
                         tmp = (int(out_tmp), int(self.cfg.row_anchor[k] * self.img_h))
-                        if tmp[0] < middle:
+                        if i == 0:
                             left_tmp.append(tmp)
                         else:
                             right_tmp.append(tmp)
@@ -97,7 +86,7 @@ class UFLDDetector:
 
                         out_tmp = out_tmp / (num_grid_col - 1) * self.img_h
                         tmp = (int(self.cfg.col_anchor[k] * self.img_w), int(out_tmp))
-                        if tmp[0] < middle:
+                        if i == 0:
                             left_tmp.append(tmp)
                         else:
                             right_tmp.append(tmp)
@@ -107,13 +96,8 @@ class UFLDDetector:
         return left_coords, right_coords
 
     def detect(self, img, draw=True):
-        """
-        检测单张图像的车道线
-        :param image_path: 图像路径
-        :param draw: 是否在图像上绘制车道线
-        :return: 检测结果字典，包含坐标和拟合参数；如果draw=True，还返回绘制后的图像
-        """
         # 图像预处理
+        img_display = img.copy()
         frame_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(frame_rgb)
         img_tensor = self.img_transforms(img_pil).unsqueeze(0).cuda()
@@ -122,6 +106,13 @@ class UFLDDetector:
             pred = self.net(img_tensor)
 
         left_coords, right_coords = self.pred2coords(pred)
+
+        for cords in left_coords:
+            cv2.circle(img_display,(cords[0],cords[1]),radius=5,color=(0,255,0),thickness=-1)
+        for cords in right_coords:
+            cv2.circle(img_display,(cords[0],cords[1]),radius=5,color=(255,255,0),thickness=-1)
+        # cv2.imshow('result',img_display)
+        # cv2.waitKey(0)
 
         result = {
             'left_coords': np.array(left_coords),
@@ -150,12 +141,6 @@ class UFLDDetector:
         return result
 
     def visualize(self, result, window_name="Lane Detection", window_size=(800, 450)):
-        """
-        可视化检测结果
-        :param result: detect方法的返回值
-        :param window_name: 窗口名称
-        :param window_size: 窗口大小
-        """
         if 'image' not in result:
             raise ValueError("结果中没有图像，请在detect时设置draw=True")
 
@@ -168,8 +153,8 @@ class UFLDDetector:
 
 if __name__ == "__main__":
     # 示例使用
-    IMG_INPUT_PATH = r"D:\UFLD\Ultra-Fast-Lane-Detection-v2-master\UFLD_dataset\clips\train\FACT19_1_1LDImage1.jpg"
-    IMG_OUTPUT_PATH = "test_img.jpg"
+    IMG_INPUT_PATH = r"D:\program\HoriLane\RunwayDetection\FACT19_1_1LDImage1.jpg"
+    IMG_OUTPUT_PATH = "D:/program/HoriLane/RunwayDetection/result.jpg"
 
     detector = UFLDDetector()
     result = detector.detect(IMG_INPUT_PATH, draw=True)

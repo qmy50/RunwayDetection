@@ -15,6 +15,10 @@ def draw_full_image_line(img, k, b, color=(0, 0, 255), thickness=2):
         color (tuple): BGR颜色，默认为绿色 (0,255,0)
         thickness (int): 线条粗细，默认为2
     """
+    if abs(k) > 1e5 or np.isnan(k) or np.isinf(k):
+        return  # 直接跳过，不画线
+    if np.isnan(b) or np.isinf(b):
+        return
     h, w = img.shape[:2]          # 获取图像高度和宽度
 
     # 选择图像顶部 (y=0) 和底部 (y=h-1) 两个点

@@ -6,6 +6,10 @@ from UFLDv2.utils.common import initialize_weights
 from UFLDv2.model.seg_model import SegHead
 from UFLDv2.model.layer import CoordConv
 
+# from utils.common import initialize_weights
+# from model.seg_model import SegHead
+# from model.layer import CoordConv
+
 class parsingNet(nn.Module):
     def __init__(self, pretrained=True, backbone='50', num_grid_row = None, num_cls_row = None, 
                  num_grid_col = None, num_cls_col = None, num_lane_on_row = None, num_lane_on_col = None, 

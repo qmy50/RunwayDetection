@@ -1,4 +1,5 @@
 from UFLDv2.model.model_culane import parsingNet
+# from model.model_culane import parsingNet
 def get_model(cfg):
     print("调用ResNet18网络")
     return parsingNet(pretrained = True, backbone=cfg.backbone, 
