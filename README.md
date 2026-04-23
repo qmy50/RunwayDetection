@@ -65,12 +65,17 @@ python detect_img_ros_test.py ../UFLDv2/configs/tusimple_res18.py
 
 <img width="1617" height="910" alt="image" src="https://github.com/user-attachments/assets/c9d823c1-c094-49f8-abc6-5aa85f5c3f3c" />
 
-##项目参考文献及资料:
-[1]
+## 项目参考文献及资料:
 
-[2]
+[1] 孙宇鑫.基于视觉引导的无人机自主导航与着陆方法研究[D].西安电子科技大学,2024.DOI:10.27389/d.cnki.gxadu.2024.000415.
 
-[3]
+[2] 程晋前.基于视觉辅助的固定翼无人机跑道着陆导航与控制技术研究[D].电子科技大学,2025.DOI:10.27005/d.cnki.gdzku.2025.004039.
+
+[3] Qin, Zequn,Zhang, Pengyi,Li, Xi.Ultra Fast Deep Lane Detection With Hybrid Anchor Driven Ordinal Classification[J].IEEE Transactions on Pattern Analysis and Machine Intelligence,2024,46,(5):2555-2568.DOI:10.1109/TPAMI.2022.3182097.
+
+[4] Qin, Zequn,Wang, Huanyu,Li, Xi.Ultra Fast Structure-Aware Deep Lane Detection[C].//16th European Conference on Computer Vision-ECCV-Biennial.2020:276-291.
+
+[5] Ouyang, Daliang,He, Su,Zhang, Guozhong , et al.EFFICIENT MULTI-SCALE ATTENTION MODULE WITH CROSS-SPATIAL LEARNING[C].//IEEE International Conference on Acoustics, Speech, and Signal Processing (ICASSP).2023:1-5.
 
 
 
