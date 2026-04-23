@@ -16,11 +16,20 @@ UFLDv2链接:  https://github.com/cfzd/Ultra-Fast-Lane-Detection-v2
 
 新增项目原理，仿真结果与误差分析等
 
-项目原理如下：
+仿真运行流程如下：
+
+首先开启gazebo环境
+
+'''
+roslaunch px4 outdoor2.launch
+'''
+
+项目原理如下：    
 
 <img width="1612" height="906" alt="image" src="https://github.com/user-attachments/assets/35c60933-8f56-41e7-991c-254bef3275a3" />
 
-关于yolo26seg部分，目前完成了网络训练与姿态解算部分，但是在仿真中为了提高系统运行速度所以直接提取的跑道块四个顶点进行的pnp解算，没有进行真正的yolo26分割
+关于yolo26seg部分，目前完成了网络训练与姿态解算，但是在仿真中为了提高系统运行速度所以直接提取的跑道块四个顶点在HSV空间内按照阈值提取顶点进行的pnp解算，没有进行真正的yolo26分割
+需要进一步完善
 
 <img width="1604" height="891" alt="image" src="https://github.com/user-attachments/assets/df99b426-a9c9-4ad9-a457-758c91677a74" />
 
@@ -28,11 +37,16 @@ UFLDv2链接:  https://github.com/cfzd/Ultra-Fast-Lane-Detection-v2
 
 仿真流程及结果如下：
 
-![Uploading image.png…]()
+<img width="1612" height="890" alt="image" src="https://github.com/user-attachments/assets/924adf8c-fe98-46d4-8093-4723134f57b2" />
 
 可以看到目前高度方向，减去静差后误差可以控制在2m内较为精确，侧偏方向误差较大，需要对解算方法进行一定改进
 
-![Uploading image.png…]()
+<img width="1617" height="910" alt="image" src="https://github.com/user-attachments/assets/c9d823c1-c094-49f8-abc6-5aa85f5c3f3c" />
+
+
+
+
+
 
 
 
