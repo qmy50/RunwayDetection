@@ -63,6 +63,7 @@ python detect_img_ros_test.py ../UFLDv2/configs/tusimple_res18.py
 
 <img width="1612" height="890" alt="image" src="https://github.com/user-attachments/assets/924adf8c-fe98-46d4-8093-4723134f57b2" />
 
+<br>
 可以看到目前高度方向，减去静差后误差可以控制在2m内较为精确，侧偏方向误差较大，需要对解算方法进行一定改进
 
 <img width="1617" height="910" alt="image" src="https://github.com/user-attachments/assets/c9d823c1-c094-49f8-abc6-5aa85f5c3f3c" />
