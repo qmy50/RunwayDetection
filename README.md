@@ -18,7 +18,9 @@ UFLDv2链接:  https://github.com/cfzd/Ultra-Fast-Lane-Detection-v2
 
 ## 仿真运行流程如下：
 
-首先开启gazebo环境：
+首先需要线安装XTdrone开源无人机仿真平台，安装链接及文档为： https://www.yuque.com/woshihenyouxiude/lwkpvm/bl2h1k3sh6dnru0y
+
+开启gazebo环境：
 
 ```
 roslaunch px4 outdoor2.launch
