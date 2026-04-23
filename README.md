@@ -18,11 +18,33 @@ UFLDv2链接:  https://github.com/cfzd/Ultra-Fast-Lane-Detection-v2
 
 仿真运行流程如下：
 
-首先开启gazebo环境
+首先开启gazebo环境：
 
-'''
+```
 roslaunch px4 outdoor2.launch
-'''
+```
+
+开启飞机通信节点与键盘控制节点
+```
+python plane_communication.py 0
+```
+```
+python plane_keyboard_control.py 1
+```
+开启位姿真值获取
+```
+python get_local_pose.py plane 1
+```
+在键盘控制节点终端输入v,t,等待飞机起飞.随后按b切换为offboard模式并=退出键盘控制节点
+
+运行自动控制节点，首先控制飞机大致对准机场，随后按v开启视觉自动对准模式，并开启视觉处理节点
+```
+python plane_keyboard_simple.py
+```
+
+```
+python detect_img_ros_test.py ../UFLDv2/configs/tusimple_res18.py
+```
 
 项目原理如下：    
 
