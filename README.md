@@ -20,7 +20,7 @@ UFLDv2链接:  https://github.com/cfzd/Ultra-Fast-Lane-Detection-v2
 
 <img width="1612" height="906" alt="image" src="https://github.com/user-attachments/assets/35c60933-8f56-41e7-991c-254bef3275a3" />
 
-关于yolo26seg部分，目前完成了网络训练与姿态解算部分，但是在仿真中为了提高系统运行速度所以直接提取的跑道块四个顶点进行的pnp解算，没有尽心真正的yolo26分割
+关于yolo26seg部分，目前完成了网络训练与姿态解算部分，但是在仿真中为了提高系统运行速度所以直接提取的跑道块四个顶点进行的pnp解算，没有进行真正的yolo26分割
 
 <img width="1604" height="891" alt="image" src="https://github.com/user-attachments/assets/df99b426-a9c9-4ad9-a457-758c91677a74" />
 
