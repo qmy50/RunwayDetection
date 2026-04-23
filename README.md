@@ -1,4 +1,4 @@
-# Runway Detection Project Based on YOLO， UFLDv2 and OpenCV
+# Runway Detection Project Based on YOLO， UFLDv2 and PNP
 
 # 2026.3.15 更新
 
