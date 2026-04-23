@@ -1,4 +1,4 @@
-# Runway Detection Project Based on YOLOv8 and Ultra Fast Lane Detection v2 and PNP algorithm 
+# Runway Detection Project Based on YOLO， UFLDv2 and OpenCV
 
 # 2026.3.15 更新
 
