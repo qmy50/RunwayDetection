@@ -28,9 +28,12 @@ UFLDv2链接:  https://github.com/cfzd/Ultra-Fast-Lane-Detection-v2
 
 仿真流程及结果如下：
 
-<img width="1613" height="895" alt="image" src="https://github.com/user-attachments/assets/20a74d1e-3f7b-4019-92d8-75153424f20b" />
+![Uploading image.png…]()
 
-<img width="1627" height="904" alt="image" src="https://github.com/user-attachments/assets/0ab36344-1a1b-4a0d-b03a-f142ac307f2c" />
+可以看到目前高度方向，减去静差后误差可以控制在2m内较为精确，侧偏方向误差较大，需要对解算方法进行一定改进
+
+![Uploading image.png…]()
+
 
 
 
