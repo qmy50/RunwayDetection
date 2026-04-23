@@ -53,6 +53,7 @@ python detect_img_ros_test.py ../UFLDv2/configs/tusimple_res18.py
 <br>
 关于yolo26seg部分，目前完成了网络训练与姿态解算，但是在仿真中为了提高系统运行速度所以直接提取的跑道块四个顶点在HSV空间内按照阈值提取顶点进行的pnp解算，没有进行真正的yolo26分割
 需要进一步完善
+<br>
 
 <img width="1604" height="891" alt="image" src="https://github.com/user-attachments/assets/df99b426-a9c9-4ad9-a457-758c91677a74" />
 
