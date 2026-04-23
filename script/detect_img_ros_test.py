@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import rospy
 from sensor_msgs.msg import Image
+from geometry_msgs.msg import PoseStamped
 from cv_bridge import CvBridge, CvBridgeError
 import onnxruntime as ort
 from std_msgs.msg import Float32, Bool
@@ -11,7 +12,19 @@ from RunwayDetector_for_single_onnx_fast import RunwayDetector
 from estimate_math import vanishing_point_pose, calculate_pose_from_runway
 from pnp_test import PNPExtractor
 from utils import draw_full_image_line
+from KalmanFilter import KalmanFilter1D
+import os
+from datetime import datetime
 
+# 日志文件用于误差分析
+LOG_DIR = os.path.join("/home/tianbot/XTDrone/RunwayDetectionV1","runway_analysis_logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+log_filename = os.path.join(LOG_DIR, f"height_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
+log_file = open(log_filename, 'w')
+log_file.write("timestamp,source,height_m,height_smooth,offset_y,gt_height,gt_offset_y,land_flag,remarks\n")
+log_file.flush()  
+
+height_kf = KalmanFilter1D(Q=0.05, R=0.5)  
 onnx_model_path = r"/home/tianbot/XTDrone/RunwayDetectionV1/script/model/best.onnx"
 IMAGE_TOPIC = "/plane_0/image_raw"
 camera_matrix = np.array([
@@ -41,6 +54,8 @@ USE_YOLO = True
 USE_PNP = True
 USE_UFLD = False
 LAND = False
+groundtruth_height = 0.0
+groundtruth_offset_y = 0.0
 
 def preprocess_onnx(img, input_size=640):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -84,12 +99,24 @@ def image_callback(msg):
     except CvBridgeError as e:
         rospy.logerr(e)
         return
+    
+    def write_log(source, height, height_smooth, offset_y,gt_height,gt_offset_y, land_flag, remarks=""):
+        timestamp = rospy.get_time()
+        # 如果某个值为 None，写入 "nan"
+        height_str = f"{height:.3f}" if height is not None else "nan"
+        height_smooth_str = f"{height_smooth:.3f}" if height_smooth is not None else "nan"
+        offset_y_str = f"{offset_y:.3f}" if offset_y is not None else "nan"
+        gt_height_str = f"{gt_height:.3f}" if gt_height is not None else "nan"
+        gt_offset_y_str = f"{gt_offset_y:.3f}" if gt_offset_y is not None else "nan"
+        land_flag_str = "True" if land_flag else "False"
+        log_file.write(f"{timestamp},{source},{height_str},{height_smooth_str},{offset_y_str},{gt_height_str},{gt_offset_y_str},{land_flag_str},{remarks}\n")
+        log_file.flush()
 
     h, w = frame.shape[:2]
     box = None
 
     if USE_YOLO:
-        rospy.loginfo("✅ USE YOLO")
+        rospy.loginfo_throttle(1.0,"✅ USE YOLO")
         img_onnx = preprocess_onnx(frame)
         outputs = session.run([output_name], {input_name: img_onnx})
         box = postprocess_onnx(outputs[0], h, w)
@@ -97,22 +124,21 @@ def image_callback(msg):
     result = {}
     if USE_PNP :
         result = pnp_extractor.process_frame(frame, draw_result=False)
-        rospy.loginfo("✅ USE PNP")
         y_offset = result['y_offset']
         if y_offset is not None:
+            rospy.loginfo_throttle(1.0,"✅ USE PNP")
             H = result['height']
             delta_y = y_offset
-            rospy.loginfo(f"高度: {H:.1f}m | 偏移: {delta_y:.2f}")
+            rospy.loginfo_throttle(1.0,f"高度: {H:.1f}m | 偏移: {delta_y:.2f}")
             pub_pnp.publish(np.clip(delta_y,-15,15))
-
-            if (H is not None and 0 <= H <= 20) or result['end_flag']:
+            if (H is not None and 0 <= H <= 15) or result['end_flag']:
                 USE_UFLD = True
                 USE_PNP = False
             
             # if delta_y is not None:
             #     pub_pnp.publish(delta_y)
         # if result['left_line'] is not None and result['right_line'] is not None:
-        # #     rospy.loginfo("✅ PNP success")
+        # #     rospy.loginfo(" PNP success")
         # #     HAS_PNP = True
         #     left,right = result['left_line'],result['right_line']
         #     draw_full_image_line(frame, left[0], left[1])
@@ -121,7 +147,7 @@ def image_callback(msg):
         #     USE_PNP = False
 
     elif USE_UFLD:
-        rospy.loginfo("✅ USE UFLDv2")
+        rospy.loginfo_throttle(1.0,"✅ USE UFLDv2")
         result = runway_detector.process_frame(frame)
         if result['vanishing_point'] is not None:
             vp_x, vp_y = result['vanishing_point']
@@ -132,13 +158,15 @@ def image_callback(msg):
             gama_deg = np.rad2deg(-gama)
 
             H, delta_y = calculate_pose_from_runway(
-                W=32,
+                W=32.05,
                 k1=1/result['right_line'][0],
                 k2=1/result['left_line'][0],
-                beta = -beta, gama = -gama
+                beta = beta, gama = gama
             )
+            H_smooth = height_kf.update(H)
+            write_log("UFLD", H, H_smooth, delta_y, groundtruth_height,groundtruth_offset_y,LAND, "UFLD mode")
             
-            if 0 <= H <= 10:
+            if 0 <= H <= 9:
                 rospy.logwarn("✅ landing")
                 pub_land.publish(True)
                 LAND = True
@@ -149,24 +177,38 @@ def image_callback(msg):
 
     if box is not None:
         x1, y1, x2, y2 = box[0]
-        # cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 255), 2)
-        # if y2 >= 475:
-        #     USE_UFLD = True
-        #     USE_PNP = False
-        # cv2.putText(frame, "RUNWAY", (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,0,0),2)
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 255), 2)
+        if y2 >= 475:
+            USE_UFLD = True
+            USE_PNP = False
+        cv2.putText(frame, "RUNWAY", (x1, y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255,0,0),2)
         runway_center_x = (x1 + x2)/2
-        offset_x = (runway_center_x - w / 2) / (w / 2)
+        offset_x = np.clip((runway_center_x - w / 2) / (w / 2),-10,10)
         pub_xoffset.publish(offset_x)
         runway_center_y = (y1 + y2)/2
-        offset_y = (runway_center_y - h / 3) / (h / 3)
+        offset_y = (runway_center_y - h / 3.2) / (h / 3.2)
         pub_vertiacl.publish(offset_y)
     if USE_PNP:
         cv2.imshow("Runway Detect", frame)
         cv2.waitKey(1)
 
+def shutdown_hook():
+    global log_file
+    log_file.close()
+    rospy.loginfo("日志文件已关闭，保存路径: %s", log_filename)
+
+def pose_callback(msg):
+    global groundtruth_height,groundtruth_offset_y
+    groundtruth_height = msg.pose.position.z
+    groundtruth_offset_y = msg.pose.position.y
+    # rospy.loginfo_throttle(1.0,f"当前高度为:{groundtruth_height}")
+
 if __name__ == "__main__":
     rospy.init_node("runway_detector_node")
+    rospy.on_shutdown(shutdown_hook)
     rospy.Subscriber(IMAGE_TOPIC, Image, image_callback, queue_size=10)
+
+    rospy.Subscriber('plane_0/mavros/vision_pose/pose',PoseStamped,pose_callback,queue_size=10)
 
     pub_xoffset = rospy.Publisher('runway_offset',Float32,queue_size=1)
     pub_vertiacl = rospy.Publisher('runway_offset_vertical',Float32,queue_size=10)
