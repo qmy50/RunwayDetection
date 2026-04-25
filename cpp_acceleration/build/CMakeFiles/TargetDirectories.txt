@@ -1,7 +1,0 @@
-/home/tianbot/XTDrone/RunwayDetectionV1/cpp_acceleration/build/CMakeFiles/install/strip.dir
-/home/tianbot/XTDrone/RunwayDetectionV1/cpp_acceleration/build/CMakeFiles/install/local.dir
-/home/tianbot/XTDrone/RunwayDetectionV1/cpp_acceleration/build/CMakeFiles/install.dir
-/home/tianbot/XTDrone/RunwayDetectionV1/cpp_acceleration/build/CMakeFiles/list_install_components.dir
-/home/tianbot/XTDrone/RunwayDetectionV1/cpp_acceleration/build/CMakeFiles/rebuild_cache.dir
-/home/tianbot/XTDrone/RunwayDetectionV1/cpp_acceleration/build/CMakeFiles/edit_cache.dir
-/home/tianbot/XTDrone/RunwayDetectionV1/cpp_acceleration/build/CMakeFiles/lane_cpp.dir
