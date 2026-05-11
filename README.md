@@ -63,6 +63,8 @@ python detect_img_ros_test.py ../UFLDv2/configs/tusimple_res18.py
 
 ## 仿真流程及结果如下：
 
+### 仿真测试于UBUNTU20.04 ROS1 noetic
+
 <img width="1612" height="890" alt="image" src="https://github.com/user-attachments/assets/924adf8c-fe98-46d4-8093-4723134f57b2" />
 
 <br>
